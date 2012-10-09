@@ -64,6 +64,10 @@ module Rapleaf
 
       public
 
+      def get_lead_by_cookie(cookie)
+        get_lead(LeadKey.new(LeadKeyType::COOKIE, cookie))
+      end
+
       def get_lead_by_idnum(idnum)
         get_lead(LeadKey.new(LeadKeyType::IDNUM, idnum))
       end
