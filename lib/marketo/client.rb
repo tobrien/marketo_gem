@@ -150,6 +150,8 @@ module Rapleaf
                     :id => idnum
                   }})
           lead_record = LeadRecord.from_hash(response[:success_sync_lead][:result][:lead_record])
+          lead_record.idnum = response[:success_sync_lead][:result][:lead_id]
+          lead_record
         rescue Exception => e
           @logger.log(e) if @logger
           return nil
