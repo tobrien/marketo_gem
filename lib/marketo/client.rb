@@ -2,7 +2,7 @@ require File.expand_path('authentication_header', File.dirname(__FILE__))
 
 module Rapleaf
   module Marketo
-    def self.new_client(access_key, secret_key, api_subdomain = 'na-i', api_version = '1_5', document_version = '1_4')
+    def self.new_client(access_key, secret_key, api_version = '2_0', api_subdomain = 'na-m', document_version = '2_0')
       client = Savon::Client.new do
         wsdl.endpoint     = "https://#{api_subdomain}.marketo.com/soap/mktows/#{api_version}"
         wsdl.document     = "http://app.marketo.com/soap/mktows/#{document_version}?WSDL"
@@ -77,6 +77,16 @@ module Rapleaf
         get_lead(LeadKey.new(LeadKeyType::EMAIL, email))
       end
 
+      def get_lead_activity(lead_key, activity_type_filter = nil, stream_position = nil, batch_size = nil )
+        begin
+          response = send_request("ns1:paramsGetLeadActivity", {:lead_key => lead_key.to_hash, :activity_filter => activity_type_filter.to_hash, :start_position => stream_position, :batch_size => batch_size })
+          return response[:success_get_lead_activity][:lead_activity_list][:activity_record_list].collect {|r| ActivityRecord.from_hash( r ) }
+        rescue Exception => e
+          @logger.log(e) if @logger
+          return nil
+        end
+      end
+
       def set_logger(logger)
         @logger = logger
       end
@@ -146,28 +156,28 @@ module Rapleaf
         end
       end
 
-      def add_to_list(list_key, email)
-        list_operation(list_key, ListOperationType::ADD_TO, email)
+      def add_to_list(list_key, idnum)
+        list_operation(list_key, ListOperationType::ADD_TO, idnum)
       end
 
-      def remove_from_list(list_key, email)
-        list_operation(list_key, ListOperationType::REMOVE_FROM, email)
+      def remove_from_list(list_key, idnum)
+        list_operation(list_key, ListOperationType::REMOVE_FROM, idnum)
       end
 
-      def is_member_of_list?(list_key, email)
-        list_operation(list_key, ListOperationType::IS_MEMBER_OF, email)
+      def is_member_of_list?(list_key, idnum)
+        list_operation(list_key, ListOperationType::IS_MEMBER_OF, idnum)
       end
 
       private
-      def list_operation(list_key, list_operation_type, email)
+      def list_operation(list_key, list_operation_type, idnum)
         begin
           response = send_request("ns1:paramsListOperation", {
               :list_operation   => list_operation_type,
-              :list_key         => list_key,
+              :list_key         => list_key.to_hash,
               :strict           => 'false',
               :list_member_list => {
                   :lead_key => [
-                      {:key_type => 'EMAIL', :key_value => email}
+                      {:key_type => 'IDNUM', :key_value => idnum}
                   ]
               }
           })
@@ -187,6 +197,8 @@ module Rapleaf
           return nil
         end
       end
+
+
 
       def send_request(namespace, body)
         @header.set_time(DateTime.now)
