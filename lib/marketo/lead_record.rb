@@ -12,7 +12,11 @@ module Rapleaf
       def self.from_hash(savon_hash)
         lead_record = LeadRecord.new(savon_hash[:email], savon_hash[:id].to_i)
         savon_hash[:lead_attribute_list][:attribute].each do |attribute|
-          lead_record.set_attribute(attribute[:attr_name], attribute[:attr_value])
+          begin
+            lead_record.set_attribute(attribute[:attr_name], attribute[:attr_value])
+          rescue => e
+            @logger.log(e) if @logger
+          end
         end
         lead_record
       end
