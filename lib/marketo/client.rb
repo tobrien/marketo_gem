@@ -4,7 +4,7 @@ module Rapleaf
   module Marketo
     def self.new_client(access_key, secret_key, api_version = '2_0', api_subdomain = 'na-m', document_version = '2_0')
       client = Savon::Client.new do
-        wsdl.endpoint     = "https://#{api_subdomain}.marketo.com/soap/mktows/#{api_version}"
+        wsdl.endpoint     = "https://#{api_subdomain}.mktoapi.com/soap/mktows/#{api_version}"
         wsdl.document     = "http://app.marketo.com/soap/mktows/#{document_version}?WSDL"
         http.read_timeout = 90
         http.open_timeout = 90
@@ -79,7 +79,7 @@ module Rapleaf
 
       def get_lead_activity(lead_key, activity_type_filter = nil, stream_position = nil, batch_size = nil )
         begin
-          response = send_request("ns1:paramsGetLeadActivity", {:lead_key => lead_key.to_hash, :activity_filter => activity_type_filter.to_hash, :start_position => stream_position, :batch_size => batch_size })
+          response = send_request("mkt:paramsGetLeadActivity", {:lead_key => lead_key.to_hash, :activity_filter => activity_type_filter.to_hash, :start_position => stream_position, :batch_size => batch_size })
           return response[:success_get_lead_activity][:lead_activity_list][:activity_record_list].collect {|r| ActivityRecord.from_hash( r ) }
         rescue Exception => e
           @logger.log(e) if @logger
@@ -117,7 +117,7 @@ module Rapleaf
             attributes << {:attr_name => name, :attr_type => 'string', :attr_value => value}
           end
 
-          response = send_request("ns1:paramsSyncLead", {
+          response = send_request("mkt:paramsSyncLead", {
               :return_lead => true,
               :lead_record =>
                   {:email               => lead_record.email,
@@ -142,7 +142,7 @@ module Rapleaf
 
           attributes << {:attr_name => 'Id', :attr_type => 'string', :attr_value => idnum.to_s}
 
-          response = send_request("ns1:paramsSyncLead", {
+          response = send_request("mkt:paramsSyncLead", {
               :return_lead => true,
               :lead_record =>
                   {
@@ -173,7 +173,7 @@ module Rapleaf
       private
       def list_operation(list_key, list_operation_type, idnum)
         begin
-          response = send_request("ns1:paramsListOperation", {
+          response = send_request("mkt:paramsListOperation", {
               :list_operation   => list_operation_type,
               :list_key         => list_key.to_hash,
               :strict           => 'false',
@@ -192,7 +192,7 @@ module Rapleaf
 
       def get_lead(lead_key)
         begin
-          response = send_request("ns1:paramsGetLead", {:lead_key => lead_key.to_hash})
+          response = send_request("mkt:paramsGetLead", {:lead_key => lead_key.to_hash})
           return LeadRecord.from_hash(response[:success_get_lead][:result][:lead_record_list][:lead_record])
         rescue Exception => e
           @logger.log(e) if @logger
@@ -210,9 +210,9 @@ module Rapleaf
 
       def request(namespace, body, header)
         @client.request namespace do |soap|
-          soap.namespaces["xmlns:ns1"]            = "http://www.marketo.com/mktows/"
+          soap.namespaces["xmlns:mkt"]            = "http://www.marketo.com/mktows/"
           soap.body                               = body
-          soap.header["ns1:AuthenticationHeader"] = header
+          soap.header["mkt:AuthenticationHeader"] = header
         end
       end
     end
